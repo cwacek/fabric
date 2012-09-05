@@ -169,9 +169,18 @@ def parallel(pool_size=None):
             # calls in newer versions of the 'ssh' library.)
             Random.atfork()
             return func(*args, **kwargs)
-        inner.parallel = True
-        inner.serial = False
-        inner.pool_size = pool_size
+
+        #If we can't get multiprocessing, fail back to serial
+        try:
+          from multiprocessing.synchronize import BoundedSemaphore
+        except ImportError:
+          inner.parallel = False
+          inner.serial = True
+          print("Multiprocessing doesn't work on this platform. Falling back to serial operation.")
+        else:
+          inner.parallel = True
+          inner.serial = False
+          inner.pool_size = pool_size
         return _wrap_as_new(func, inner)
 
     # Allow non-factory-style decorator use (@decorator vs @decorator())
